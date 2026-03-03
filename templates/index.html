@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>テキスト可視化ツール</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body{
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:#f7f7f7;
+      margin:0;
+      padding:24px;
+      color:#333;
+    }
+    .container{
+      max-width:900px;
+      margin:0 auto;
+      background:#fff;
+      padding:24px;
+      border-radius:8px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    }
+    h1{ margin-top:0; font-size:22px; }
+    .row{ margin-bottom:24px; }
+    label{
+      display:block;
+      font-weight:700;
+      margin-bottom:6px;
+      font-size:14px;
+    }
+    textarea, input{
+      width:100%;
+      box-sizing:border-box;
+      padding:10px;
+      font-size:14px;
+      border:1px solid #ccc;
+      border-radius:4px;
+    }
+    textarea{ min-height:180px; resize:vertical; }
+    button{
+      padding:10px 18px;
+      font-size:14px;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      background:#5170ff;
+      color:#fff;
+    }
+    button.secondary{ background:#999; }
+    button.save{ background:#2e7d32; }
+    img{
+      max-width:100%;
+      border:1px solid #eee;
+      margin-top:12px;
+    }
+
+    /* 共起設定を3カラムで並べる */
+    .cooc-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:12px;
+    }
+    .field label{
+      font-weight:700;
+      margin-bottom:6px;
+      font-size:13px;
+    }
+    .help{
+      margin-top:6px;
+      font-size:12px;
+      color:#666;
+      line-height:1.35;
+    }
+    @media (max-width: 720px){
+      .cooc-grid{ grid-template-columns: 1fr; }
+    }
+    .help{
+  margin-top:6px;
+  font-size:12px;
+  color:#666;
+  line-height:1.35;
+    }
+    .example{
+    margin-top:4px;
+    font-size:11px;
+    color:#aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>テキスト可視化ツール</h1>
+
+    <!-- テキスト入力 -->
+    <div class="row">
+      <label>テキスト入力</label>
+      <textarea id="text" placeholder="解析したいテキストを入力してください"></textarea>
+    </div>
+
+    <!-- クリアボタン -->
+    <div class="row">
+      <button id="clearBtn" class="secondary">クリア</button>
+    </div>
+
+    <!-- ストップワード -->
+    <div class="row">
+      <label>ストップワード（カンマ区切り）</label>
+      <input id="stopword" type="text" placeholder="例：こと, もの, する" />
+    </div>
+
+    <!-- ワードクラウド -->
+    <div class="row">
+      <button id="btnWordcloud">ワードクラウド生成</button>
+      <div>
+        <img id="imgWordcloud" />
+      </div>
+      <button id="saveWordcloud" class="save">ワードクラウド画像を保存</button>
+    </div>
+
+    <!-- 共起ネットワーク設定 -->
+    <div class="row">
+      <label>共起ネットワーク設定</label>
+
+      <div class="cooc-grid">
+        <div class="field">
+          <label for="window">共起範囲設定（近接語の範囲）</label>
+          <input id="window" type="number" value="4" min="2" max="12" />
+            <div class="help">
+            テキスト中で、どのくらい近い単語を「関係あり」とみなすかを設定します。
+            </div>
+            <div class="example">
+            設定値4 → 前後4語以内に一緒に出た単語を拾います。
+            </div>
+        </div>
+
+        <div class="field">
+          <label for="frequency">共起強度設定（共起回数しきい値）</label>
+          <input id="frequency" type="number" value="2" min="1" max="10" />
+            <div class="help">
+            何回以上一緒に出現した単語同士をつなぐかを設定します。
+            </div>
+            <div class="example">
+            設定値2 → 2回以上一緒に出た単語を拾います。
+            </div>
+        </div>
+
+        <div class="field">
+          <label for="top_n">表示語数設定（表示ノード数）</label>
+          <input id="top_n" type="number" value="40" min="10" max="100" />
+            <div class="help">
+            一度に表示する単語の最大数を設定します。
+            </div>
+            <div class="example">
+            設定値40 → 最大40語を表示します。
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 共起ネットワーク -->
+    <div class="row">
+      <button id="btnCooc">共起ネットワーク生成</button>
+      <div>
+        <img id="imgCooc" />
+      </div>
+      <button id="saveCooc" class="save">共起ネットワーク画像を保存</button>
+    </div>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
