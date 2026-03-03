@@ -1,7 +1,7 @@
 Flask==3.0.3
 gunicorn==22.0.0
 
-sudachipy==0.6.8
+sudachipy==0.6.7
 sudachidict_core==20240409
 
 wordcloud==1.9.3
