@@ -22,6 +22,7 @@
     }
     h1{ margin-top:0; font-size:22px; }
     .row{ margin-bottom:24px; }
+
     label{
       display:block;
       font-weight:700;
@@ -37,6 +38,13 @@
       border-radius:4px;
     }
     textarea{ min-height:180px; resize:vertical; }
+
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
     button{
       padding:10px 18px;
       font-size:14px;
@@ -48,10 +56,31 @@
     }
     button.secondary{ background:#999; }
     button.save{ background:#2e7d32; }
+
+    /* 画像は src が入ったときだけ表示（壊れた画像アイコン回避） */
     img{
       max-width:100%;
       border:1px solid #eee;
       margin-top:12px;
+      border-radius:8px;
+      display:none;
+    }
+    img[src]:not([src=""]){
+      display:block;
+    }
+
+    /* 入力補助 */
+    .help{
+      margin-top:6px;
+      font-size:12px;
+      color:#666;
+      line-height:1.35;
+    }
+    .example{
+      margin-top:4px;
+      font-size:10.5px;
+      color:#b7b7b7;
+      line-height:1.25;
     }
 
     /* 共起設定を3カラムで並べる */
@@ -65,35 +94,178 @@
       margin-bottom:6px;
       font-size:13px;
     }
-    .help{
-      margin-top:6px;
-      font-size:12px;
-      color:#666;
-      line-height:1.35;
-    }
     @media (max-width: 720px){
       .cooc-grid{ grid-template-columns: 1fr; }
     }
-    .help{
-  margin-top:6px;
-  font-size:12px;
-  color:#666;
-  line-height:1.35;
+
+    /* 共起：トグル */
+    .cooc-toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:10px;
+      font-size:13px;
+      color:#444;
     }
-    .example{
-    margin-top:4px;
-    font-size:11px;
-    color:#aaa;
+    .toggle-label{ font-weight:600; }
+
+    /* iOS風スイッチ（OFF=画像=ライトグリーン / ON=インタラクティブ=ブルー） */
+    .switch{
+      position: relative;
+      display:inline-block;
+      width: 48px;
+      height: 28px;
+    }
+    .switch input{
+      opacity:0;
+      width:0;
+      height:0;
+    }
+    .slider{
+      position:absolute;
+      cursor:pointer;
+      top:0; left:0; right:0; bottom:0;
+      background:#abc900; /* 画像 */
+      transition:.2s;
+      border-radius:999px;
+    }
+    .slider:before{
+      position:absolute;
+      content:"";
+      height:22px;
+      width:22px;
+      left:3px;
+      top:3px;
+      background:white;
+      transition:.2s;
+      border-radius:50%;
+      box-shadow:0 1px 4px rgba(0,0,0,0.2);
+    }
+    .switch input:checked + .slider{
+      background:#5170ff; /* インタラクティブ */
+    }
+    .switch input:checked + .slider:before{
+      transform: translateX(20px);
+    }
+
+    /* 画像表示エリア（プレースホルダー付き：ワードクラウド / 共起画像で共通利用） */
+    .preview{
+      margin-top:12px;
+      border:1px solid #eee;
+      border-radius:12px;
+      background:#fafafa;
+      padding:14px;
+    }
+    .placeholder{
+      color:#888;
+      font-size:12px;
+    }
+    /* srcが入ったらプレースホルダーは消す */
+    .preview img[src]:not([src=""]) ~ .placeholder{
+      display:none;
+    }
+    /* preview内のimgは枠線などをpreview側で持つので任意で消す */
+    .preview img{
+      border:none;
+      margin-top:0;
+    }
+
+    /* 頻出語リスト（ワードクラウド用） */
+    .word-list{
+      margin-top:12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .word-tag{
+      padding:6px 10px;
+      border:1px solid #e5e5e5;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      background:#fff;
+      user-select:none;
+    }
+    .word-tag small{
+      color:#999;
+      margin-left:6px;
+      font-size:11px;
+    }
+
+    /* 抜粋/全文パネル（頻出語クリック後に出現） */
+    .hl-panel{
+      margin-top:12px;
+      border:1px solid #eee;
+      border-radius:12px;
+      background:#fafafa;
+      padding:12px;
+      display:none; /* 初期は隠す */
+    }
+    .hl-head{
+      display:flex;
+      justify-content:flex-start;
+      margin-bottom:10px;
+    }
+    .hl-tabs{
+      display:inline-flex;
+      border:1px solid #e5e5e5;
+      border-radius:999px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .hl-tab{
+      padding:8px 14px;
+      font-size:13px;
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      color:#666;
+    }
+    .hl-tab.is-active{
+      background:#abc900;
+      color:#fff;
+    }
+    .hl-box{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:10px;
+      padding:10px;
+      line-height:1.6;
+      font-size:13px;
+
+      /* 10行分の高さ + スクロール */
+      max-height: calc(1.6em * 10 + 20px);
+      overflow:auto;
+    }
+    .kwic-item{
+      padding:6px 0;
+      border-bottom:1px dashed #eee;
+    }
+    .kwic-item:last-child{ border-bottom:none; }
+
+    mark{
+      background:#fff59d;
+      padding:0 2px;
+    }
+
+    iframe{
+      margin-top:12px;
+      width:100%;
+      height:650px;
+      border:1px solid #eee;
+      border-radius:12px;
+      display:none; /* 初期は隠す（トグルで表示） */
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1>テキスト可視化ツール</h1>
 
     <!-- テキスト入力 -->
     <div class="row">
-      <label>テキスト入力</label>
+      <label for="text">テキスト入力</label>
       <textarea id="text" placeholder="解析したいテキストを入力してください"></textarea>
     </div>
 
@@ -104,17 +276,45 @@
 
     <!-- ストップワード -->
     <div class="row">
-      <label>ストップワード（カンマ区切り）</label>
+      <label for="stopword">ストップワード（カンマ区切り）</label>
       <input id="stopword" type="text" placeholder="例：こと, もの, する" />
     </div>
 
     <!-- ワードクラウド -->
     <div class="row">
-      <button id="btnWordcloud">ワードクラウド生成</button>
-      <div>
-        <img id="imgWordcloud" />
+      <div class="btns">
+        <button id="btnWordcloud">ワードクラウド生成</button>
+        <button id="saveWordcloud" class="save">ワードクラウド画像を保存</button>
       </div>
-      <button id="saveWordcloud" class="save">ワードクラウド画像を保存</button>
+
+      <div class="preview" id="wcPreview">
+        <img id="imgWordcloud" alt="ワードクラウド" />
+        <div class="placeholder">ここにワードクラウドが表示されます</div>
+      </div>
+
+      <div id="wordList" class="word-list" aria-label="頻出語リスト"></div>
+
+      <!-- ★頻出語クリック後に出る：抜粋/全文パネル -->
+      <div id="hlPanel" class="hl-panel" aria-label="本文ハイライト表示">
+        <div class="hl-head">
+          <div class="hl-tabs" role="tablist" aria-label="抜粋 / 全文 切り替え">
+            <button id="tabExcerpt" class="hl-tab is-active" type="button" role="tab" aria-selected="true">
+              抜粋
+            </button>
+            <button id="tabFull" class="hl-tab" type="button" role="tab" aria-selected="false">
+              全文
+            </button>
+          </div>
+        </div>
+
+        <!-- 抜粋（KWIC） -->
+        <div id="kwicBox" class="hl-box" role="tabpanel"></div>
+
+        <!-- 全文（既存の全文ハイライト機能がここを書き換える想定） -->
+        <div id="textPreview" class="hl-box" role="tabpanel" style="display:none;">
+          <div class="placeholder">頻出語をクリックすると、全文ハイライトを表示できます</div>
+        </div>
+      </div>
     </div>
 
     <!-- 共起ネットワーク設定 -->
@@ -125,45 +325,51 @@
         <div class="field">
           <label for="window">共起範囲設定（近接語の範囲）</label>
           <input id="window" type="number" value="4" min="2" max="12" />
-            <div class="help">
-            テキスト中で、どのくらい近い単語を「関係あり」とみなすかを設定します。
-            </div>
-            <div class="example">
-            設定値4 → 前後4語以内に一緒に出た単語を拾います。
-            </div>
+          <div class="help">テキスト中で、どのくらい近い単語を「関係あり」とみなすかを設定します。</div>
+          <div class="example">設定値4 → 前後4語以内に一緒に出た単語を拾います。</div>
         </div>
 
         <div class="field">
           <label for="frequency">共起強度設定（共起回数しきい値）</label>
           <input id="frequency" type="number" value="2" min="1" max="10" />
-            <div class="help">
-            何回以上一緒に出現した単語同士をつなぐかを設定します。
-            </div>
-            <div class="example">
-            設定値2 → 2回以上一緒に出た単語を拾います。
-            </div>
+          <div class="help">何回以上一緒に出現した単語同士をつなぐかを設定します。</div>
+          <div class="example">設定値2 → 2回以上一緒に出た単語を拾います。</div>
         </div>
 
         <div class="field">
           <label for="top_n">表示語数設定（表示ノード数）</label>
           <input id="top_n" type="number" value="40" min="10" max="100" />
-            <div class="help">
-            一度に表示する単語の最大数を設定します。
-            </div>
-            <div class="example">
-            設定値40 → 最大40語を表示します。
-            </div>
+          <div class="help">一度に表示する単語の最大数を設定します。</div>
+          <div class="example">設定値40 → 最大40語を表示します。</div>
         </div>
+      </div>
+
+      <!-- 表示切替（トグル） -->
+      <div class="cooc-toggle" aria-label="共起ネットワーク表示モード">
+        <span class="toggle-label">画像</span>
+        <label class="switch" title="画像 / インタラクティブ 切り替え">
+          <input id="coocToggle" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">インタラクティブ</span>
       </div>
     </div>
 
     <!-- 共起ネットワーク -->
     <div class="row">
-      <button id="btnCooc">共起ネットワーク生成</button>
-      <div>
-        <img id="imgCooc" />
+      <div class="btns">
+        <button id="btnCooc">共起ネットワーク生成</button>
+        <button id="saveCooc" class="save">共起ネットワーク画像を保存</button>
       </div>
-      <button id="saveCooc" class="save">共起ネットワーク画像を保存</button>
+
+      <!-- 画像版（srcが入るまでimg非表示＝壊れた画像アイコン出ない） -->
+      <div class="preview" id="coocPreview">
+        <img id="imgCooc" alt="共起ネットワーク（画像）" />
+        <div class="placeholder">ここに共起ネットワーク（画像）が表示されます</div>
+      </div>
+
+      <!-- インタラクティブ版 -->
+      <iframe id="iframeCooc" title="共起ネットワーク（インタラクティブ）"></iframe>
     </div>
 
   </div>

@@ -7,3 +7,5 @@ sudachidict_core==20240409
 wordcloud==1.9.3
 matplotlib==3.9.0
 networkx==3.3
+
+pyvis==0.3.2
