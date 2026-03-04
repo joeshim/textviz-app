@@ -32,7 +32,7 @@ const els = {
 
   // cooc
   coocToggle: $("coocToggle"),
-  coocPreview: $("coocPreview"), // ★画像側ラッパー
+  coocPreview: $("coocPreview"),
   imgCooc: $("imgCooc"),
   iframeCooc: $("iframeCooc"),
 };
@@ -48,7 +48,6 @@ let currentMode = "excerpt"; // "excerpt" | "full"
 // 抜粋表示件数（要望：20）
 const KWIC_MAX = 20;
 const KWIC_CONTEXT = 30;
-
 
 /* =========================
    Utils
@@ -95,6 +94,41 @@ async function postForImage(endpoint, payload) {
   return URL.createObjectURL(blob);
 }
 
+/* =========================
+   Status (placeholder text)
+========================= */
+function getPlaceholderEl(previewEl) {
+  if (!previewEl) return null;
+  return previewEl.querySelector(".placeholder");
+}
+
+function setPreviewStatus(previewEl, message, busy) {
+  const ph = getPlaceholderEl(previewEl);
+  if (!ph) return;
+
+  // 元の文言を保持しておく
+  if (!ph.dataset.defaultText) {
+    ph.dataset.defaultText = ph.textContent || "";
+  }
+
+  if (busy) {
+    ph.textContent = message || "実行中…";
+  } else {
+    ph.textContent = ph.dataset.defaultText || "";
+  }
+}
+
+function setBusy(kind, busy) {
+  // kind: "wordcloud" | "cooc"
+  if (kind === "wordcloud") {
+    if (els.btnWordcloud) els.btnWordcloud.disabled = busy;
+    setPreviewStatus(els.wcPreview, "実行中…", busy);
+  }
+  if (kind === "cooc") {
+    if (els.btnCooc) els.btnCooc.disabled = busy;
+    setPreviewStatus(els.coocPreview, "実行中…", busy);
+  }
+}
 
 /* =========================
    Cooc Toggle (OFF=image / ON=interactive)
@@ -112,11 +146,8 @@ function setCoocVisibleByToggle() {
   if (els.iframeCooc) els.iframeCooc.style.display = interactive ? "block" : "none";
 }
 
-
 /* =========================
    Highlight Panel (Excerpt / Full)
-   - 初期は非表示
-   - 頻出語クリックで表示
 ========================= */
 function showHighlightPanel() {
   if (els.hlPanel) els.hlPanel.style.display = "block";
@@ -125,7 +156,6 @@ function showHighlightPanel() {
 function setHighlightMode(mode) {
   currentMode = mode;
 
-  // tabs
   if (els.tabExcerpt) {
     els.tabExcerpt.classList.toggle("is-active", mode === "excerpt");
     els.tabExcerpt.setAttribute("aria-selected", String(mode === "excerpt"));
@@ -135,23 +165,19 @@ function setHighlightMode(mode) {
     els.tabFull.setAttribute("aria-selected", String(mode === "full"));
   }
 
-  // panels
   if (els.kwicBox) els.kwicBox.style.display = (mode === "excerpt") ? "block" : "none";
   if (els.textPreview) els.textPreview.style.display = (mode === "full") ? "block" : "none";
 }
 
 function renderFullHighlight() {
   const raw = els.text?.value || "";
-
   if (!els.textPreview) return;
 
   if (!raw.trim()) {
     els.textPreview.innerHTML = `<div class="placeholder">頻出語をクリックすると、全文ハイライトを表示できます</div>`;
     return;
   }
-
   if (!currentWord) {
-    // 「全文」なのに語未選択、というケースは通常起きないが保険
     els.textPreview.innerHTML = escapeHtml(raw);
     return;
   }
@@ -165,19 +191,14 @@ function renderKWIC() {
   if (!els.kwicBox) return;
 
   const text = els.text?.value || "";
-  if (!text.trim()) {
-    els.kwicBox.innerHTML = `<div class="placeholder">頻出語をクリックすると、該当箇所の抜粋が表示されます</div>`;
-    return;
-  }
-
-  if (!currentWord) {
+  if (!text.trim() || !currentWord) {
     els.kwicBox.innerHTML = `<div class="placeholder">頻出語をクリックすると、該当箇所の抜粋が表示されます</div>`;
     return;
   }
 
   const escaped = escapeRegExp(currentWord);
   const reFind = new RegExp(escaped, "g");
-  const reMark = new RegExp(escaped, ""); // snippet内で1回だけmark（簡単・軽量）
+  const reMark = new RegExp(escaped, "");
 
   const hits = [];
   let match;
@@ -192,7 +213,6 @@ function renderKWIC() {
     hits.push(`<div class="kwic-item">…${snippet}…</div>`);
     if (hits.length >= KWIC_MAX) break;
 
-    // 念のため：ゼロ幅一致無限ループ回避
     if (match.index === reFind.lastIndex) reFind.lastIndex++;
   }
 
@@ -200,7 +220,6 @@ function renderKWIC() {
     ? hits.join("")
     : `<div class="kwic-item">一致なし</div>`;
 }
-
 
 /* =========================
    Top Words (tags)
@@ -221,21 +240,17 @@ function renderTopWords(items) {
     tag.appendChild(sm);
 
     tag.addEventListener("click", () => {
-      // 同じ語を再クリックで解除（好み：解除したい場合）
       currentWord = (currentWord === word) ? "" : word;
 
-      // パネル表示
       showHighlightPanel();
 
       if (!currentWord) {
-        // 解除時：抜粋/全文をプレースホルダーに戻す
         renderKWIC();
         renderFullHighlight();
         setHighlightMode("excerpt");
         return;
       }
 
-      // 抜粋を先に見せる（要件：初期は抜粋）
       renderKWIC();
       renderFullHighlight();
       setHighlightMode("excerpt");
@@ -245,9 +260,8 @@ function renderTopWords(items) {
   });
 }
 
-
 /* =========================
-   Wordcloud (image + top words)
+   Wordcloud
 ========================= */
 async function generateWordcloud() {
   const payload = {
@@ -272,18 +286,14 @@ async function generateWordcloud() {
 
   const j = await res.json();
 
-  // dataURL（base64）
   els.imgWordcloud.src = j.image || "";
   lastWordcloudUrl = j.image || null;
 
   renderTopWords(j.top_words || []);
-
-  // ワードクラウド生成後は、頻出語クリック待ちなのでハイライトパネルは非表示のままでOK
 }
 
-
 /* =========================
-   Cooccurrence (image + html simultaneously)
+   Cooccurrence
 ========================= */
 async function generateCooc() {
   const payload = {
@@ -294,19 +304,15 @@ async function generateCooc() {
     top_n: Number(els.topN?.value || 40),
   };
 
-  // 表示はトグルに従う
   setCoocVisibleByToggle();
 
-  // 前回URL破棄
   revokeUrlSafely(lastCoocUrl);
   revokeUrlSafely(lastCoocHtmlUrl);
   lastCoocUrl = null;
   lastCoocHtmlUrl = null;
 
-  // 画像生成
   const imgUrl = await postForImage("/cooccurrence_analysis", payload);
 
-  // html生成
   const htmlRes = await fetch("/cooccurrence_html", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -324,21 +330,17 @@ async function generateCooc() {
 
   const htmlJson = await htmlRes.json();
 
-  // 画像セット（srcが入るとCSSで表示される）
   lastCoocUrl = imgUrl;
   els.imgCooc.src = imgUrl;
 
-  // iframeセット
   const html = htmlJson.html || "<html><body>no html</body></html>";
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
   lastCoocHtmlUrl = url;
   els.iframeCooc.src = url;
 
-  // 最後にトグルに従って表示
   setCoocVisibleByToggle();
 }
-
 
 /* =========================
    Save images
@@ -349,7 +351,7 @@ function saveWordcloud() {
     return;
   }
   const a = document.createElement("a");
-  a.href = lastWordcloudUrl; // dataURL
+  a.href = lastWordcloudUrl;
   a.download = "wordcloud.png";
   document.body.appendChild(a);
   a.click();
@@ -362,13 +364,12 @@ function saveCooc() {
     return;
   }
   const a = document.createElement("a");
-  a.href = lastCoocUrl; // blob url
+  a.href = lastCoocUrl;
   a.download = "cooccurrence.png";
   document.body.appendChild(a);
   a.click();
   a.remove();
 }
-
 
 /* =========================
    Clear
@@ -377,35 +378,32 @@ function clearAll() {
   if (els.text) els.text.value = "";
   if (els.stopword) els.stopword.value = "";
 
-  // 画像・iframeを消す（src属性を外す）
   els.imgWordcloud?.removeAttribute("src");
   els.imgCooc?.removeAttribute("src");
   els.iframeCooc?.removeAttribute("src");
 
-  // 頻出語タグ
   if (els.wordList) els.wordList.innerHTML = "";
 
-  // ハイライト領域
   currentWord = "";
   if (els.hlPanel) els.hlPanel.style.display = "none";
   if (els.kwicBox) els.kwicBox.innerHTML = "";
   if (els.textPreview) els.textPreview.innerHTML = "";
 
-  // URL破棄
   revokeUrlSafely(lastCoocUrl);
   revokeUrlSafely(lastCoocHtmlUrl);
   lastWordcloudUrl = null;
   lastCoocUrl = null;
   lastCoocHtmlUrl = null;
 
-  // 共起トグルを画像に戻す
   if (els.coocToggle) els.coocToggle.checked = false;
   setCoocVisibleByToggle();
 
-  // タブも初期化
   setHighlightMode("excerpt");
-}
 
+  // プレースホルダー文言を戻す（保険）
+  setPreviewStatus(els.wcPreview, "", false);
+  setPreviewStatus(els.coocPreview, "", false);
+}
 
 /* =========================
    Events / Init
@@ -417,20 +415,31 @@ function init() {
   // highlight tabs
   els.tabExcerpt?.addEventListener("click", () => setHighlightMode("excerpt"));
   els.tabFull?.addEventListener("click", () => {
-    // 全文は重いので、切替タイミングで再描画しておく（安全）
     renderFullHighlight();
     setHighlightMode("full");
   });
 
   // buttons
   els.btnWordcloud?.addEventListener("click", async () => {
-    try { await generateWordcloud(); }
-    catch (e) { alert(e.message); }
+    setBusy("wordcloud", true);
+    try {
+      await generateWordcloud();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy("wordcloud", false);
+    }
   });
 
   els.btnCooc?.addEventListener("click", async () => {
-    try { await generateCooc(); }
-    catch (e) { alert(e.message); }
+    setBusy("cooc", true);
+    try {
+      await generateCooc();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy("cooc", false);
+    }
   });
 
   els.saveWordcloud?.addEventListener("click", saveWordcloud);
@@ -441,6 +450,10 @@ function init() {
   setCoocVisibleByToggle();
   if (els.hlPanel) els.hlPanel.style.display = "none";
   setHighlightMode("excerpt");
+
+  // 念のため、プレースホルダー初期文言を保持
+  setPreviewStatus(els.wcPreview, "", false);
+  setPreviewStatus(els.coocPreview, "", false);
 }
 
 init();
